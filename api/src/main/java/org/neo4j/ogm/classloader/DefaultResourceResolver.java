@@ -14,7 +14,12 @@
 package org.neo4j.ogm.classloader;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -24,6 +29,16 @@ import java.net.URL;
  */
 public class DefaultResourceResolver implements ResourceResolver
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultResourceResolver.class);
+    private static Method osgiFinder;
+
+    static {
+        try {
+            osgiFinder = Class.forName("org.eclipse.core.runtime.FileLocator").getMethod("toFileURL", URL.class);
+        } catch (Throwable ex) {
+            LOG.debug("Unable to find org.eclipse.core.runtime.FileLocator#resolve. Not in an OSGi environment.");
+        }
+    }
 
     @Override
     public File resolve( final URL resource ) throws URISyntaxException, MalformedURLException
@@ -35,6 +50,15 @@ public class DefaultResourceResolver implements ResourceResolver
         if(resource.getProtocol().equals("jar")) {
             String jarFileURL = resource.getPath().substring(0, resource.getPath().indexOf("!"));  //Strip out the jar protocol
             return resolve(new URL(jarFileURL));
+        }
+
+        if (osgiFinder != null && resource.getProtocol().equals("bundleresource")) {
+            try {
+                URL url = (URL) osgiFinder.invoke(null, resource);
+                return new File(url.getPath());
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                LOG.warn("Error resolving OSGi bundle {} - {}", resource, e.getMessage());
+            }
         }
 
         return null; // not handled

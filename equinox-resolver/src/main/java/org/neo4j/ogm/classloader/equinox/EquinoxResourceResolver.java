@@ -1,6 +1,6 @@
 package org.neo4j.ogm.classloader.equinox;
 
-import org.eclipse.core.runtime.FileLocator;
+//import org.eclipse.core.runtime.FileLocator;
 import org.neo4j.ogm.classloader.ResourceResolver;
 
 import java.io.File;
@@ -22,10 +22,10 @@ public class EquinoxResourceResolver implements ResourceResolver {
      */
     @Override
     public File resolve(URL resource) throws Exception {
-        if( resource.getProtocol().equals("bundleresource") ) {
-            final URL url = FileLocator.toFileURL(resource);
-            return new File(url.getPath());
-        }
+//        if( resource.getProtocol().equals("bundleresource") ) {
+//            final URL url = FileLocator.toFileURL(resource);
+//            return new File(url.getPath());
+//        }
         return null;
     }
 
