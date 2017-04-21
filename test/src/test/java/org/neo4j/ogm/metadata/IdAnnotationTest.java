@@ -47,6 +47,15 @@ public class IdAnnotationTest {
 		assertThat(classInfo.primaryIndexField().getName()).isNotNull().isEqualTo("identifier");
 	}
 
+	@Test
+	public void shouldFindBasicChild() throws Exception {
+
+		ValidAnnotations.BasicChild entity = new ValidAnnotations.BasicChild();
+
+		ClassInfo classInfo = metaData.classInfo(entity);
+		assertThat(classInfo.primaryIndexField().getName()).isNotNull().isEqualTo("identifier");
+	}
+
 	@Test(expected = IllegalArgumentException.class)
 	public void shouldRejectTwoIdsOnSameClass() throws Exception {
 

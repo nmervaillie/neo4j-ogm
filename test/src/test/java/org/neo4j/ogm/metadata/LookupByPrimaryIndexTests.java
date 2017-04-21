@@ -65,6 +65,20 @@ public class LookupByPrimaryIndexTests extends MultiDriverTestClass {
     }
 
     @Test
+    public void loadUsesIdWhenPresentOnParent() {
+
+        ValidAnnotations.BasicChild entity = new ValidAnnotations.BasicChild();
+        entity.identifier = "id1";
+        session.save(entity);
+
+        final Session session2 = sessionFactory.openSession();
+
+        final ValidAnnotations.Basic retrievedEntity = session2.load(ValidAnnotations.Basic.class, "id1");
+        assertNotNull(retrievedEntity);
+        assertEquals(entity.identifier, retrievedEntity.identifier);
+    }
+
+    @Test
     public void loadUsesPrimaryIndexWhenPresent() {
 
         User user1 = new User("login1", "Name 1", "password");

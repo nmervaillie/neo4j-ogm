@@ -26,8 +26,6 @@ public class ValidAnnotations {
 		@Id public String identifier;
 	}
 
-	public static class BasicGenerated {
-		public Long id;
-		@Id public String identifier;
+	public static class BasicChild extends Basic {
 	}
 }
