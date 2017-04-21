@@ -8,7 +8,7 @@
  * This product may include a number of subcomponents with
  * separate copyright notices and license terms. Your use of the source
  * code for these subcomponents is subject to the terms and
- *  conditions of the subcomponent's license, as noted in the LICENSE file.
+ * conditions of the subcomponent's license, as noted in the LICENSE file.
  */
 
 package org.neo4j.ogm.persistence.examples.election;
@@ -23,6 +23,7 @@ import org.neo4j.ogm.context.MappedRelationship;
 import org.neo4j.ogm.context.MappingContext;
 import org.neo4j.ogm.domain.election.Candidate;
 import org.neo4j.ogm.domain.election.Voter;
+import org.neo4j.ogm.response.model.Neo4jNodeId;
 import org.neo4j.ogm.session.Neo4jSession;
 import org.neo4j.ogm.session.Session;
 import org.neo4j.ogm.session.SessionFactory;
@@ -114,7 +115,7 @@ public class ElectionTest extends MultiDriverTestClass {
 
         MappingContext context = ((Neo4jSession) session).context();
 
-        assertTrue(context.containsRelationship(new MappedRelationship(v.getId(), "CANDIDATE_VOTED_FOR", b.getId(), Voter.class, Candidate.class)));
+        assertTrue(context.containsRelationship(new MappedRelationship(Neo4jNodeId.of(v.getId()), "CANDIDATE_VOTED_FOR", Neo4jNodeId.of(b.getId()), Voter.class, Candidate.class)));
         session.clear();
 
         a = session.load(Candidate.class, a.getId());
@@ -122,7 +123,7 @@ public class ElectionTest extends MultiDriverTestClass {
 
         assertEquals(b.getId(), v.candidateVotedFor.getId());
 
-        assertTrue(context.containsRelationship(new MappedRelationship(v.getId(), "CANDIDATE_VOTED_FOR", b.getId(), Voter.class, Candidate.class)));
+        assertTrue(context.containsRelationship(new MappedRelationship(Neo4jNodeId.of(v.getId()), "CANDIDATE_VOTED_FOR", Neo4jNodeId.of(b.getId()), Voter.class, Candidate.class)));
 
         v.candidateVotedFor = a;
 
@@ -134,8 +135,8 @@ public class ElectionTest extends MultiDriverTestClass {
 
         assertEquals(a.getId(), v.candidateVotedFor.getId());
 
-        assertTrue(context.containsRelationship(new MappedRelationship(v.getId(), "CANDIDATE_VOTED_FOR", a.getId(), Voter.class, Candidate.class)));
-        assertFalse(context.containsRelationship(new MappedRelationship(v.getId(), "CANDIDATE_VOTED_FOR", b.getId(), Voter.class, Candidate.class)));
+        assertTrue(context.containsRelationship(new MappedRelationship(Neo4jNodeId.of(v.getId()), "CANDIDATE_VOTED_FOR", Neo4jNodeId.of(a.getId()), Voter.class, Candidate.class)));
+        assertFalse(context.containsRelationship(new MappedRelationship(Neo4jNodeId.of(v.getId()), "CANDIDATE_VOTED_FOR", Neo4jNodeId.of(b.getId()), Voter.class, Candidate.class)));
 
         session.clear();
     }

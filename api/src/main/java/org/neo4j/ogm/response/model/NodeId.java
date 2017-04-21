@@ -11,22 +11,12 @@
  * conditions of the subcomponent's license, as noted in the LICENSE file.
  */
 
-package org.neo4j.ogm.context;
-
-import org.neo4j.ogm.response.model.NodeId;
+package org.neo4j.ogm.response.model;
 
 /**
- * @author vince
+ * @author Nicolas Mervaillie
  */
-public interface Mappable {
+public interface NodeId {
 
-    NodeId getEndNodeId();
-
-    NodeId getStartNodeId();
-
-    String getRelationshipType();
-
-    Class getEndNodeType();
-
-    Class getStartNodeType();
+	Object getValue();
 }

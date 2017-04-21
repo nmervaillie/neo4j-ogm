@@ -37,6 +37,8 @@ import org.neo4j.ogm.model.GraphModel;
 import org.neo4j.ogm.model.Node;
 import org.neo4j.ogm.model.Property;
 import org.neo4j.ogm.response.Response;
+import org.neo4j.ogm.response.model.Neo4jNodeId;
+import org.neo4j.ogm.response.model.NodeId;
 import org.neo4j.ogm.response.model.PropertyModel;
 import org.neo4j.ogm.utils.ClassUtils;
 import org.neo4j.ogm.utils.EntityUtils;
@@ -76,7 +78,7 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
     public <T> Iterable<T> map(Class<T> type, Response<GraphModel> model) {
 
         List<T> objects = new ArrayList<>();
-        Set<Long> objectIds = new HashSet<>();
+        Set<Object> objectIds = new HashSet<>();
           /*
          * these two lists will contain the node ids and edge ids from the response, in the order
          * they were presented to us.
@@ -88,7 +90,7 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
         while ((graphModel = model.next()) != null) {
             List<T> mappedEntities = map(type, graphModel, nodeIds, edgeIds);
             for (T entity : mappedEntities) {
-                Long identity = EntityUtils.identity(entity, metadata);
+                Object identity = EntityUtils.identity(entity, metadata);
                 if (!objectIds.contains(identity)) {
                     objects.add(entity);
                     objectIds.add(identity);
@@ -123,11 +125,11 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
 
         mapEntities(type, graphModel, nodeIds, edgeIds);
         List<T> results = new ArrayList<>();
-        Set<Long> seenNodeIds = new HashSet<>();
+        Set<Object> seenNodeIds = new HashSet<>();
         Set<Long> seenEdgeIds = new HashSet<>();
 
         for (Long id : nodeIds) {
-            Object o = mappingContext.getNodeEntity(id);
+            Object o = mappingContext.getNodeEntity(Neo4jNodeId.of(id));
 
             if (!seenNodeIds.contains(id)) {
                 executePostLoad(o);
@@ -169,15 +171,25 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
         }
     }
 
+    // nodeIds passed as an optimization to avoid mapping again and again the same entity
+    // TODO : see if cannot use the mapping context for that
     private void mapNodes(GraphModel graphModel, Set<Long> nodeIds) {
 
         for (Node node : graphModel.getNodes()) {
             if (!nodeIds.contains(node.getId())) {
-                Object entity = mappingContext.getNodeEntity(node.getId());
+//                Class<?> entityClass = entityFactory.getObjectClassFor(node.getLabels());
+//                ClassInfo classInfo = metadata.classInfo(entityClass.getName());
+                NodeId nodeId;
+                if (node.getPrimaryIndex() == null) {
+                    nodeId = Neo4jNodeId.of(node.getId());
+                } else {
+                    nodeId = null; // FIXME new BusinessIndexId.of(...)
+                }
+                Object entity = mappingContext.getNodeEntity(nodeId);
                 try {
                     if (entity == null) {
                         entity = entityFactory.newObject(node);
-                        setIdentity(entity, node.getId());
+                        EntityUtils.setIdentityId(metadata, entity, node.getId());
                         setProperties(node, entity);
                         setLabels(node, entity);
                         mappingContext.addNodeEntity(entity);
@@ -201,11 +213,6 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
                 logger.error("Failed to execute post load method", e);
             }
         }
-    }
-
-    // TODO : identity
-    private void setIdentity(Object instance, Long id) {
-        EntityUtils.setIdentityId(metadata, instance, id);
     }
 
     private void setProperties(Node nodeModel, Object instance) {
@@ -295,8 +302,8 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
 
         for (Edge edge : graphModel.getRelationships()) {
             if (!edgeIds.contains(edge.getId())) {
-                Object source = mappingContext.getNodeEntity(edge.getStartNode());
-                Object target = mappingContext.getNodeEntity(edge.getEndNode());
+                Object source = mappingContext.getNodeEntity(Neo4jNodeId.of(edge.getStartNode()));
+                Object target = mappingContext.getNodeEntity(Neo4jNodeId.of(edge.getEndNode()));
 
                 edgeIds.add(edge.getId());
 
@@ -332,7 +339,9 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
             oneToMany.add(edge);
         } else {
             FieldInfo writer = getRelationalWriter(metadata.classInfo(source), edge.getType(), OUTGOING, target);
-            mappingContext.addRelationship(new MappedRelationship(edge.getStartNode(), edge.getType(), edge.getEndNode(), edge.getId(), source.getClass(), ClassUtils.getType(writer.typeParameterDescriptor())));
+            NodeId startNodeId = EntityUtils.nodeId(source, metadata);
+            NodeId endNodeId = EntityUtils.nodeId(target, metadata);
+            mappingContext.addRelationship(new MappedRelationship(startNodeId, edge.getType(), endNodeId, edge.getId(), source.getClass(), ClassUtils.getType(writer.typeParameterDescriptor())));
         }
     }
 
@@ -355,7 +364,9 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
         } else {
             if (writer.forScalar()) {
                 writer.write(source, relationshipEntity);
-                mappingContext.addRelationship(new MappedRelationship(edge.getStartNode(), edge.getType(), edge.getEndNode(), edge.getId(), source.getClass(), ClassUtils.getType(writer.typeParameterDescriptor())));
+                NodeId startNodeId = EntityUtils.nodeId(source, metadata);
+                NodeId endNodeId = EntityUtils.nodeId(target, metadata);
+                mappingContext.addRelationship(new MappedRelationship(startNodeId, edge.getType(), endNodeId, edge.getId(), source.getClass(), ClassUtils.getType(writer.typeParameterDescriptor())));
             } else {
                 oneToMany.add(edge);
             }
@@ -380,7 +391,7 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
 
         // create and hydrate the new RE
         Object relationshipEntity = entityFactory.newObject(getRelationshipEntity(edge));
-        setIdentity(relationshipEntity, edge.getId());
+        EntityUtils.setIdentityId(metadata, relationshipEntity, edge.getId());
 
         // REs also have properties
         setProperties(edge, relationshipEntity);
@@ -417,8 +428,10 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
         // first, build the full set of related entities of each type and direction for each source entity in the relationship
         for (Edge edge : oneToManyRelationships) {
 
-            Object instance = mappingContext.getNodeEntity(edge.getStartNode());
-            Object parameter = mappingContext.getNodeEntity(edge.getEndNode());
+            NodeId startNodeId = Neo4jNodeId.of(edge.getStartNode());
+            NodeId endNodeId = Neo4jNodeId.of(edge.getEndNode());
+            Object instance = mappingContext.getNodeEntity(startNodeId);
+            Object parameter = mappingContext.getNodeEntity(endNodeId);
 
             // is this a relationship entity we're trying to map?
             Object relationshipEntity = mappingContext.getRelationshipEntity(edge.getId());
@@ -427,12 +440,12 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
                 FieldInfo outgoingWriter = findIterableWriter(instance, relationshipEntity, edge.getType(), OUTGOING);
                 if (outgoingWriter != null) {
                     entityCollector.recordTypeRelationship(edge.getStartNode(), relationshipEntity, edge.getType(), OUTGOING);
-                    relationshipsToRegister.add(new MappedRelationship(edge.getStartNode(), edge.getType(), edge.getEndNode(), edge.getId(), instance.getClass(), ClassUtils.getType(outgoingWriter.typeParameterDescriptor())));
+                    relationshipsToRegister.add(new MappedRelationship(startNodeId, edge.getType(), endNodeId, edge.getId(), instance.getClass(), ClassUtils.getType(outgoingWriter.typeParameterDescriptor())));
                 }
                 FieldInfo incomingWriter = findIterableWriter(parameter, relationshipEntity, edge.getType(), Relationship.INCOMING);
                 if (incomingWriter != null) {
                     entityCollector.recordTypeRelationship(edge.getEndNode(), relationshipEntity, edge.getType(), Relationship.INCOMING);
-                    relationshipsToRegister.add(new MappedRelationship(edge.getStartNode(), edge.getType(), edge.getEndNode(), edge.getId(), instance.getClass(), ClassUtils.getType(incomingWriter.typeParameterDescriptor())));
+                    relationshipsToRegister.add(new MappedRelationship(startNodeId, edge.getType(), endNodeId, edge.getId(), instance.getClass(), ClassUtils.getType(incomingWriter.typeParameterDescriptor())));
                 }
                 if (incomingWriter != null || outgoingWriter != null) {
                     registeredEdges.add(edge);
@@ -441,12 +454,12 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
                 FieldInfo outgoingWriter = findIterableWriter(instance, parameter, edge.getType(), OUTGOING);
                 if (outgoingWriter != null) {
                     entityCollector.recordTypeRelationship(edge.getStartNode(), parameter, edge.getType(), OUTGOING);
-                    relationshipsToRegister.add(new MappedRelationship(edge.getStartNode(), edge.getType(), edge.getEndNode(), edge.getId(), instance.getClass(), ClassUtils.getType(outgoingWriter.typeParameterDescriptor())));
+                    relationshipsToRegister.add(new MappedRelationship(startNodeId, edge.getType(), endNodeId, edge.getId(), instance.getClass(), ClassUtils.getType(outgoingWriter.typeParameterDescriptor())));
                 }
                 FieldInfo incomingWriter = findIterableWriter(parameter, instance, edge.getType(), Relationship.INCOMING);
                 if (incomingWriter != null) {
                     entityCollector.recordTypeRelationship(edge.getEndNode(), instance, edge.getType(), Relationship.INCOMING);
-                    relationshipsToRegister.add(new MappedRelationship(edge.getStartNode(), edge.getType(), edge.getEndNode(), edge.getId(), instance.getClass(), ClassUtils.getType(incomingWriter.typeParameterDescriptor())));
+                    relationshipsToRegister.add(new MappedRelationship(startNodeId, edge.getType(), endNodeId, edge.getId(), instance.getClass(), ClassUtils.getType(incomingWriter.typeParameterDescriptor())));
                 }
                 if (incomingWriter != null || outgoingWriter != null) {
                     registeredEdges.add(edge);
@@ -464,7 +477,7 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
                     for (Class entityClass : entityCollector.getEntityClassesForOwningTypeAndRelationshipTypeAndRelationshipDirection(instanceId, relationshipType, relationshipDirection)) {
                         Collection<?> entities = entityCollector.getCollectiblesForOwnerAndRelationship(instanceId, relationshipType, relationshipDirection, entityClass);
                         //Class entityType = entityCollector.getCollectibleTypeForOwnerAndRelationship(instanceId, relationshipType, relationshipDirection);
-                        mapOneToMany(mappingContext.getNodeEntity(instanceId), entityClass, entities, relationshipType, relationshipDirection);
+                        mapOneToMany(mappingContext.getNodeEntity(Neo4jNodeId.of(instanceId)), entityClass, entities, relationshipType, relationshipDirection);
                     }
                 }
             }
@@ -478,12 +491,14 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
         // were not mapped during one->one mapping, or one->many mapping.
         for (Edge edge : oneToManyRelationships) {
             if (!registeredEdges.contains(edge)) {
-                Object source = mappingContext.getNodeEntity(edge.getStartNode());
-                Object target = mappingContext.getNodeEntity(edge.getEndNode());
+                NodeId startNodeId = Neo4jNodeId.of(edge.getStartNode());
+                NodeId endNodeId = Neo4jNodeId.of(edge.getEndNode());
+                Object source = mappingContext.getNodeEntity(startNodeId);
+                Object target = mappingContext.getNodeEntity(startNodeId);
                 FieldInfo writer = getRelationalWriter(metadata.classInfo(source), edge.getType(), OUTGOING, target);
                 // ensures its tracked in the domain
                 if (writer != null) {
-                    MappedRelationship mappedRelationship = new MappedRelationship(edge.getStartNode(), edge.getType(), edge.getEndNode(), edge.getId(), source.getClass(), ClassUtils.getType(writer.typeParameterDescriptor()));
+                    MappedRelationship mappedRelationship = new MappedRelationship(startNodeId, edge.getType(), endNodeId, edge.getId(), source.getClass(), ClassUtils.getType(writer.typeParameterDescriptor()));
                     if (!mappingContext.containsRelationship(mappedRelationship)) {
                         mappingContext.addRelationship(mappedRelationship);
                     }
@@ -546,8 +561,8 @@ public class GraphEntityMapper implements ResponseMapper<GraphModel> {
     // depends on the runtime values of the edge in the mapping context, which may vary for the same edge pattern.
     private ClassInfo getRelationshipEntity(Edge edge) {
 
-        Object source = mappingContext.getNodeEntity(edge.getStartNode());
-        Object target = mappingContext.getNodeEntity(edge.getEndNode());
+        Object source = mappingContext.getNodeEntity(Neo4jNodeId.of(edge.getStartNode()));
+        Object target = mappingContext.getNodeEntity(Neo4jNodeId.of(edge.getEndNode()));
 
         Set<ClassInfo> classInfos = metadata.classInfoByLabelOrType(edge.getType());
 

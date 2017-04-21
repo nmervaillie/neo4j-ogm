@@ -8,7 +8,7 @@
  * This product may include a number of subcomponents with
  * separate copyright notices and license terms. Your use of the source
  * code for these subcomponents is subject to the terms and
- *  conditions of the subcomponent's license, as noted in the LICENSE file.
+ * conditions of the subcomponent's license, as noted in the LICENSE file.
  */
 
 package org.neo4j.ogm.cypher.compiler;
@@ -16,6 +16,7 @@ package org.neo4j.ogm.cypher.compiler;
 import java.util.Collection;
 
 import org.neo4j.ogm.context.Mappable;
+import org.neo4j.ogm.response.model.NodeId;
 
 /**
  * Maintains contextual information throughout the process of compiling Cypher statements to persist a graph of objects.
@@ -29,27 +30,27 @@ public interface CompileContext {
 
     boolean removeRegisteredRelationship(Mappable mappable);
 
-    boolean visited(Long identity);
+    boolean visited(Object identity);
 
-    NodeBuilder visitedNode(Long identity);
+    NodeBuilder visitedNode(Object identity);
 
     void register(Object entity);
 
-    void registerNewObject(Long reference, Object relationshipEntity);
+    void registerNewObject(NodeId reference, Object relationshipEntity);
 
     void visitRelationshipEntity(Long relationshipIdentity);
 
     Collection<Object> registry();
 
-    void visit(Long identity, NodeBuilder nodeBuilder);
+    void visit(Object identity, NodeBuilder nodeBuilder);
 
     boolean visitedRelationshipEntity(Long relationshipIdentity);
 
-    boolean deregisterIncomingRelationships(Long identity, String type, Class endNodeType, boolean relationshipEntity);
+    boolean deregisterIncomingRelationships(NodeId identity, String type, Class endNodeType, boolean relationshipEntity);
 
-    boolean deregisterOutgoingRelationships(Long identity, String type, Class endNodeType);
+    boolean deregisterOutgoingRelationships(NodeId identity, String type, Class endNodeType);
 
-    Object getNewObject(Long id);
+    Object getNewObject(NodeId id);
 
     Compiler getCompiler();
 

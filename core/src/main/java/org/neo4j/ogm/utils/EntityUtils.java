@@ -19,6 +19,8 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.neo4j.ogm.metadata.ClassInfo;
 import org.neo4j.ogm.metadata.FieldInfo;
 import org.neo4j.ogm.metadata.MetaData;
+import org.neo4j.ogm.response.model.Neo4jNodeId;
+import org.neo4j.ogm.response.model.NodeId;
 
 /**
  * The utility methods here will all throw a <code>NullPointerException</code> if invoked with <code>null</code>.
@@ -58,4 +60,21 @@ public class EntityUtils {
 		FieldInfo.write(identityField, entity, identity);
     }
 
+    // FIXME replace with optional
+    public static NodeId nodeId(Object node, MetaData metaData) {
+        ClassInfo classInfo = metaData.classInfo(node.getClass().getName());
+        FieldInfo primaryIndexField = classInfo.primaryIndexField();
+        if (primaryIndexField != null) {
+            Object idValue = primaryIndexField.readProperty(node);
+            // ...
+            return null;
+        } else {
+            Long entityId = getEntityId(metaData, node);
+            if (entityId != null) {
+                return Neo4jNodeId.of(entityId);
+            } else {
+                return null;
+            }
+        }
+    }
 }

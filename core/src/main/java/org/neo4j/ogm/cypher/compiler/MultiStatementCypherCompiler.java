@@ -53,7 +53,6 @@ public class MultiStatementCypherCompiler implements Compiler {
         this.deletedRelationshipEntityBuilders = new ArrayList<>();
     }
 
-    // TODO : identity
     @Override
     public NodeBuilder newNode(Long id) {
         NodeBuilder nodeBuilder = new DefaultNodeBuilder(id);

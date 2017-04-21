@@ -8,7 +8,7 @@
  * This product may include a number of subcomponents with
  * separate copyright notices and license terms. Your use of the source
  * code for these subcomponents is subject to the terms and
- *  conditions of the subcomponent's license, as noted in the LICENSE file.
+ * conditions of the subcomponent's license, as noted in the LICENSE file.
  */
 
 package org.neo4j.ogm.drivers.http.response;
@@ -27,8 +27,6 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.ogm.drivers.http.response.AbstractHttpResponse;
-import org.neo4j.ogm.drivers.http.response.RestModelAdapter;
 import org.neo4j.ogm.response.Response;
 import org.neo4j.ogm.response.model.DefaultRestModel;
 import org.neo4j.ogm.response.model.NodeModel;
@@ -85,7 +83,7 @@ public class JsonRestResponseTest {
             Assert.assertEquals(1931, data.property("born"));
             data = (NodeModel) rows.get("movie");
             Assert.assertEquals("The Birdcage", data.property("title"));
-            Assert.assertEquals(395L, data.getId().longValue());
+            Assert.assertEquals(395L, ((Long)data.getId()).longValue());
 
             restModel = rsp.next();
             rows = restModel.getRow();

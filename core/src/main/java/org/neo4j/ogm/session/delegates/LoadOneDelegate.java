@@ -8,12 +8,13 @@
  * This product may include a number of subcomponents with
  * separate copyright notices and license terms. Your use of the source
  * code for these subcomponents is subject to the terms and
- *  conditions of the subcomponent's license, as noted in the LICENSE file.
+ * conditions of the subcomponent's license, as noted in the LICENSE file.
  */
 package org.neo4j.ogm.session.delegates;
 
 import java.io.Serializable;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.neo4j.ogm.annotation.RelationshipEntity;
 import org.neo4j.ogm.context.GraphEntityMapper;
 import org.neo4j.ogm.cypher.query.PagingAndSortingQuery;
@@ -22,6 +23,7 @@ import org.neo4j.ogm.metadata.FieldInfo;
 import org.neo4j.ogm.model.GraphModel;
 import org.neo4j.ogm.request.GraphModelRequest;
 import org.neo4j.ogm.response.Response;
+import org.neo4j.ogm.response.model.Neo4jNodeId;
 import org.neo4j.ogm.session.Neo4jException;
 import org.neo4j.ogm.session.Neo4jSession;
 import org.neo4j.ogm.session.request.strategy.QueryStatements;
@@ -67,7 +69,15 @@ public class LoadOneDelegate {
         ClassInfo typeInfo = session.metaData().classInfo(type.getName());
 
         if (typeInfo.annotationsInfo().get(RelationshipEntity.class) == null) {
-            ref = session.context().getNodeEntity(id);
+            if (typeInfo.primaryIndexField() != null) {
+                throw new NotImplementedException("TODO");
+            } else {
+                // lookup by native id
+                if (! (id instanceof Long)) {
+                    throw new IllegalArgumentException("Entity " + type + "cannot be found without long ID"); // TODO : make msg clearer
+                }
+                ref = session.context().getNodeEntity(Neo4jNodeId.of((Long) id));
+            }
         } else {
             // Coercing to Long. identityField.convertedType() yields no parametrised type to call cast() with.
             // But we know this will always be Long.

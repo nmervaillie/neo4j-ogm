@@ -33,7 +33,7 @@ class IdentityMap {
     // objects with no properties will always hash to this value.
     private static final long SEED = 0xDEADBEEF / (11 * 257);
 
-    private final Map<Long, Long> nodeHash;
+    private final Map<Object, Long> nodeHash;
 
     private final Map<Long, Long> relEntityHash;
 
@@ -80,7 +80,7 @@ class IdentityMap {
         boolean isRelEntity = false;
 
         if (entityId != null) {
-            if (metaData.isRelationshipEntity(classInfo.name())) {
+            if (metaData.isRelationshipEntity(classInfo.name())) { // TODO classInfo.isRelationshipEntity()
                 isRelEntity = true;
             }
 

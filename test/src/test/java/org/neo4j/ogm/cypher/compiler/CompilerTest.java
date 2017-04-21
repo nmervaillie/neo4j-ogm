@@ -36,6 +36,7 @@ import org.neo4j.ogm.domain.social.Individual;
 import org.neo4j.ogm.domain.social.Mortal;
 import org.neo4j.ogm.metadata.MetaData;
 import org.neo4j.ogm.request.Statement;
+import org.neo4j.ogm.response.model.Neo4jNodeId;
 import org.neo4j.ogm.session.request.RowStatementFactory;
 
 /**
@@ -653,7 +654,7 @@ public class CompilerTest {
         mappingContext.addNodeEntity(forum);
         mappingContext.addNodeEntity(topic);
         mappingContext.addRelationshipEntity(link, relationshipId);
-        MappedRelationship mappedRelationship = new MappedRelationship(forumId, "HAS_TOPIC", topicId, relationshipId, Forum.class, ForumTopicLink.class);
+        MappedRelationship mappedRelationship = new MappedRelationship(Neo4jNodeId.of(forumId), "HAS_TOPIC", Neo4jNodeId.of(topicId), relationshipId, Forum.class, ForumTopicLink.class);
         mappingContext.addRelationship(mappedRelationship);
 
         // change the timestamp

@@ -19,6 +19,7 @@ import org.neo4j.ogm.annotation.Relationship;
 import org.neo4j.ogm.context.MappedRelationship;
 import org.neo4j.ogm.metadata.ClassInfo;
 import org.neo4j.ogm.metadata.FieldInfo;
+import org.neo4j.ogm.response.model.NodeId;
 import org.neo4j.ogm.session.Neo4jSession;
 import org.neo4j.ogm.session.event.Event;
 import org.neo4j.ogm.session.event.PersistenceEvent;
@@ -219,7 +220,7 @@ final class SaveEventDelegate {
     // have been deleted since the last time the objects were loaded.
     private void clearPreviousRelationships(Object parent, FieldInfo reader) {
 
-        Long id = EntityUtils.identity(parent, session.metaData());
+        Object id = EntityUtils.identity(parent, session.metaData());
         String type = reader.relationshipType();
         Class endNodeType = ClassUtils.getType(reader.typeDescriptor());
 
@@ -233,7 +234,7 @@ final class SaveEventDelegate {
         }
     }
 
-    private void deregisterIncomingRelationship(Long id, String relationshipType, Class endNodeType) {
+    private void deregisterIncomingRelationship(Object id, String relationshipType, Class endNodeType) {
 
         Iterator<MappedRelationship> iterator = this.registeredRelationships.iterator();
 
@@ -246,7 +247,7 @@ final class SaveEventDelegate {
         }
     }
 
-    private void deregisterOutgoingRelationship(Long id, String relationshipType, Class endNodeType) {
+    private void deregisterOutgoingRelationship(Object id, String relationshipType, Class endNodeType) {
 
         Iterator<MappedRelationship> iterator = this.registeredRelationships.iterator();
 
@@ -340,13 +341,13 @@ final class SaveEventDelegate {
         String direction = reader.relationshipDirection();
 
         ClassInfo parentInfo = this.session.metaData().classInfo(parent);
-        Long parentId = EntityUtils.identity(parent, session.metaData());
+        NodeId parentId = EntityUtils.nodeId(parent, session.metaData());
 
         ClassInfo referenceInfo = this.session.metaData().classInfo(reference);
 
         if (referenceInfo != null) {
 
-            Long referenceId = EntityUtils.identity(reference, this.session.metaData());
+            NodeId referenceId = EntityUtils.nodeId(reference, this.session.metaData());
 
             if (!referenceInfo.isRelationshipEntity()) {
 
@@ -361,13 +362,13 @@ final class SaveEventDelegate {
                 // graph relationship is transitive across the RE domain object
                 Object startNode = referenceInfo.getStartNodeReader().read(reference);
                 ClassInfo startNodeInfo = this.session.metaData().classInfo(startNode);
-                Long startNodeId = EntityUtils.identity(startNode, session.metaData());
+                NodeId startNodeId = EntityUtils.nodeId(startNode, session.metaData());
 
                 Object endNode = referenceInfo.getEndNodeReader().read(reference);
                 ClassInfo endNodeInfo = this.session.metaData().classInfo(endNode);
-                Long endNodeId = EntityUtils.identity(endNode, session.metaData());
+                NodeId endNodeId = EntityUtils.nodeId(endNode, session.metaData());
 
-                MappedRelationship edge = new MappedRelationship(startNodeId, type, endNodeId, referenceId, startNodeInfo.getUnderlyingClass(), endNodeInfo.getUnderlyingClass());
+                MappedRelationship edge = new MappedRelationship(startNodeId, type, endNodeId, (Long) referenceId.getValue(), startNodeInfo.getUnderlyingClass(), endNodeInfo.getUnderlyingClass());
                 mappedRelationships.add(edge);
             }
         }

@@ -8,10 +8,13 @@
  * This product may include a number of subcomponents with
  * separate copyright notices and license terms. Your use of the source
  * code for these subcomponents is subject to the terms and
- *  conditions of the subcomponent's license, as noted in the LICENSE file.
+ * conditions of the subcomponent's license, as noted in the LICENSE file.
  */
 
 package org.neo4j.ogm.context;
+
+import org.neo4j.ogm.response.model.Neo4jNodeId;
+import org.neo4j.ogm.response.model.NodeId;
 
 /**
  * Light-weight record of a relationship mapped from the database
@@ -25,14 +28,14 @@ package org.neo4j.ogm.context;
  */
 public class MappedRelationship implements Mappable {
 
-    private final long startNodeId;
+    private final NodeId startNodeId;
     private final String relationshipType;
-    private final long endNodeId;
+    private final NodeId endNodeId;
     private Long relationshipId;
     private Class startNodeType;
     private Class endNodeType;
 
-    public MappedRelationship(long startNodeId, String relationshipType, long endNodeId, Class startNodeType, Class endNodeType) {
+    public MappedRelationship(NodeId startNodeId, String relationshipType, NodeId endNodeId, Class startNodeType, Class endNodeType) {
         this.startNodeId = startNodeId;
         this.relationshipType = relationshipType;
         this.endNodeId = endNodeId;
@@ -40,7 +43,13 @@ public class MappedRelationship implements Mappable {
         this.endNodeType = endNodeType;
     }
 
-    public MappedRelationship(long startNodeId, String relationshipType, long endNodeId, Long relationshipId, Class startNodeType, Class endNodeType) {
+    // compatibility ctor
+    @Deprecated
+    public MappedRelationship(Long startNodeId, String relationshipType, Long endNodeId, Class startNodeType, Class endNodeType) {
+        this(Neo4jNodeId.of(startNodeId), relationshipType, Neo4jNodeId.of(endNodeId), null, startNodeType, endNodeType);
+    }
+
+    public MappedRelationship(NodeId startNodeId, String relationshipType, NodeId endNodeId, Long relationshipId, Class startNodeType, Class endNodeType) {
         this.startNodeId = startNodeId;
         this.relationshipType = relationshipType;
         this.endNodeId = endNodeId;
@@ -49,7 +58,7 @@ public class MappedRelationship implements Mappable {
         this.endNodeType = endNodeType;
     }
 
-    public long getStartNodeId() {
+    public NodeId getStartNodeId() {
         return startNodeId;
     }
 
@@ -57,7 +66,7 @@ public class MappedRelationship implements Mappable {
         return relationshipType;
     }
 
-    public long getEndNodeId() {
+    public NodeId getEndNodeId() {
         return endNodeId;
     }
 
@@ -92,22 +101,22 @@ public class MappedRelationship implements Mappable {
 
         MappedRelationship that = (MappedRelationship) o;
 
-        return startNodeId == that.startNodeId
-                && endNodeId == that.endNodeId
+        return startNodeId.equals(that.startNodeId)
+                && endNodeId.equals(that.endNodeId)
                 && relationshipType.equals(that.relationshipType)
                 && !(relationshipId != null ? !relationshipId.equals(that.relationshipId) : that.relationshipId != null);
     }
 
-    @Override
-    public int hashCode() {
-        int result = (int) (startNodeId ^ (startNodeId >>> 32));
-        result = 31 * result + relationshipType.hashCode();
-        result = 31 * result + (int) (endNodeId ^ (endNodeId >>> 32));
-        result = 31 * result + (relationshipId != null ? relationshipId.hashCode() : 0);
+	@Override
+	public int hashCode() {
+		int result = startNodeId.hashCode();
+		result = 31 * result + relationshipType.hashCode();
+		result = 31 * result + endNodeId.hashCode();
+		result = 31 * result + (relationshipId != null ? relationshipId.hashCode() : 0);
         return result;
-    }
+	}
 
-    public String toString() {
+	public String toString() {
         return String.format("(%s)-[%s:%s]->(%s)", startNodeId, relationshipId, relationshipType, endNodeId);
     }
 }

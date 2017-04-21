@@ -1,12 +1,14 @@
 /*
- * Copyright (c)  [2011-2015] "Neo Technology" / "Graph Aware Ltd."
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This product is licensed to you under the Apache License, Version 2.0 (the "License").
  * You may not use this product except in compliance with the License.
  *
- * This product may include a number of subcomponents with separate copyright notices and license terms. Your use of the source code for these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file.
- *
- *
+ * This product may include a number of subcomponents with
+ * separate copyright notices and license terms. Your use of the source
+ * code for these subcomponents is subject to the terms and
+ * conditions of the subcomponent's license, as noted in the LICENSE file.
  */
 
 package org.neo4j.ogm.metadata.reflect;
@@ -55,7 +57,8 @@ public class EntityFactory {
      * @throws MappingException if it's not possible to resolve or instantiate a class from the given argument
      */
     public <T> T newObject(Node nodeModel) {
-        return instantiateObjectFromTaxa(nodeModel.getLabels());
+
+        return (T) instantiate(getObjectClassFor(nodeModel.getLabels()));
     }
 
     /**
@@ -67,7 +70,7 @@ public class EntityFactory {
      * @throws MappingException if it's not possible to resolve or instantiate a class from the given argument
      */
     public <T> T newObject(Edge edgeModel) {
-        return instantiateObjectFromTaxa(edgeModel.getType());
+        return (T) instantiate(getObjectClassFor(edgeModel.getType()));
     }
 
     /**
@@ -94,7 +97,8 @@ public class EntityFactory {
         return instantiate(clarse);
     }
 
-    private <T> T instantiateObjectFromTaxa(String... taxa) {
+    public Class<?> getObjectClassFor(String... taxa) {
+
         if (taxa == null || taxa.length == 0) {
             throw new BaseClassNotFoundException("<null>");
         }
@@ -103,8 +107,8 @@ public class EntityFactory {
 
         try {
             @SuppressWarnings("unchecked")
-            Class<T> loadedClass = (Class<T>) Class.forName(fqn, false, Thread.currentThread().getContextClassLoader());
-            return instantiate(loadedClass);
+            Class<?> loadedClass = Class.forName(fqn, false, Thread.currentThread().getContextClassLoader());
+            return loadedClass;
         } catch (ClassNotFoundException e) {
             throw new MappingException("Unable to load class with FQN: " + fqn, e);
         }

@@ -28,6 +28,7 @@ import org.neo4j.ogm.metadata.ClassInfo;
 import org.neo4j.ogm.model.RowModel;
 import org.neo4j.ogm.request.Statement;
 import org.neo4j.ogm.response.Response;
+import org.neo4j.ogm.response.model.Neo4jNodeId;
 import org.neo4j.ogm.session.Neo4jSession;
 import org.neo4j.ogm.session.Session;
 import org.neo4j.ogm.transaction.AbstractTransaction;
@@ -43,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * @author Vince Bickers
  * @author Jasper Blues
  */
-public class RequestExecutor {
+public class RequestExecutor { // TODO rename to SaveRequestExecutor
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestExecutor.class);
 
@@ -198,7 +199,7 @@ public class RequestExecutor {
             // These are the objects we need to install and initialise. By contrast, existing objects represented
             // by a reference mapping will always have identical 'ref' and 'id' values.
             if (!(referenceMapping.ref.equals(referenceMapping.id))) {
-                Object newEntity = context.getNewObject(referenceMapping.ref);
+                Object newEntity = context.getNewObject(Neo4jNodeId.of(referenceMapping.ref));
                 LOGGER.debug("creating new node id: {}, {}, {}", referenceMapping.ref, referenceMapping.id, newEntity);
                 initialiseNewEntity(referenceMapping.id, newEntity, session);
             }
@@ -223,7 +224,7 @@ public class RequestExecutor {
                     registerEntity(session.context(), classInfo, referenceMapping.id, existingRelationshipEntity);
                 }
             } else {
-                Object newRelationshipEntity = context.getNewObject(referenceMapping.ref);
+                Object newRelationshipEntity = context.getNewObject(Neo4jNodeId.of(referenceMapping.ref));
                 // not all relationship ids represent relationship entities
                 if (newRelationshipEntity != null) {
                     LOGGER.debug("creating new relationship entity id: {}", referenceMapping.id);
@@ -310,7 +311,9 @@ public class RequestExecutor {
         for (ReferenceMapping referenceMapping : relRefMappings) {
             if (registeredTransientRelationshipIndex.containsKey(referenceMapping.ref)) {
                 TransientRelationship transientRelationship = registeredTransientRelationshipIndex.get(referenceMapping.ref);
-                MappedRelationship mappedRelationship = new MappedRelationship(context.getId(transientRelationship.getSrc()), transientRelationship.getRel(), context.getId(transientRelationship.getTgt()), transientRelationship.getSrcClass(), transientRelationship.getTgtClass());
+                // TODO : commented out for refactor
+//                MappedRelationship mappedRelationship = new MappedRelationship(context.getId(transientRelationship.getSrc()), transientRelationship.getRel(), context.getId(transientRelationship.getTgt()), transientRelationship.getSrcClass(), transientRelationship.getTgtClass());
+                MappedRelationship mappedRelationship = new MappedRelationship(transientRelationship.getSrc(), transientRelationship.getRel(), transientRelationship.getTgt(), transientRelationship.getSrcClass(), transientRelationship.getTgtClass());
                 if (session.context().getRelationshipEntity(referenceMapping.id) != null) {
                     mappedRelationship.setRelationshipId(referenceMapping.id);
                 }
@@ -369,6 +372,9 @@ public class RequestExecutor {
         }
     }
 
+    /**
+     * keeps track between ids sent to the db and id back from the db
+     */
     class ReferenceMapping {
 
         private Long ref;

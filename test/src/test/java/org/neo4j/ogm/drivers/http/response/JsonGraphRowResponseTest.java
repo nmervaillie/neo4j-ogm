@@ -8,7 +8,7 @@
  * This product may include a number of subcomponents with
  * separate copyright notices and license terms. Your use of the source
  * code for these subcomponents is subject to the terms and
- *  conditions of the subcomponent's license, as noted in the LICENSE file.
+ * conditions of the subcomponent's license, as noted in the LICENSE file.
  */
 
 package org.neo4j.ogm.drivers.http.response;
@@ -26,7 +26,6 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.ogm.drivers.http.response.AbstractHttpResponse;
 import org.neo4j.ogm.model.GraphModel;
 import org.neo4j.ogm.model.GraphRowListModel;
 import org.neo4j.ogm.model.GraphRowModel;
@@ -59,7 +58,7 @@ public class JsonGraphRowResponseTest {
             TestCase.assertEquals(8, graphRowModels.size());
             GraphRowModel model = graphRowModels.get(0);
             GraphModel graph = model.getGraph();
-            TestCase.assertEquals(Long.valueOf(26), graph.getNodes().iterator().next().getId());
+            TestCase.assertEquals(26L, graph.getNodes().iterator().next().getId().longValue());
             TestCase.assertEquals(0, graph.getRelationships().size());
             Object[] rows = model.getRow();
             TestCase.assertEquals(2, rows.length);
@@ -82,7 +81,7 @@ public class JsonGraphRowResponseTest {
                 "          \"graph\": {\n" +
                 "            \"nodes\": [\n" +
                 "              {\n" +
-                "                \"id\": \"26\",\n" +
+                "                \"id\": 26,\n" +
                 "                \"labels\": [\n" +
                 "                  \"Customer\"\n" +
                 "                ],\n" +
@@ -106,7 +105,7 @@ public class JsonGraphRowResponseTest {
                 "          \"graph\": {\n" +
                 "            \"nodes\": [\n" +
                 "              {\n" +
-                "                \"id\": \"26\",\n" +
+                "                \"id\": 26,\n" +
                 "                \"labels\": [\n" +
                 "                  \"Customer\"\n" +
                 "                ],\n" +

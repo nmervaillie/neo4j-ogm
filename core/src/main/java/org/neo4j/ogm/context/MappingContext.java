@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 import org.neo4j.ogm.metadata.ClassInfo;
 import org.neo4j.ogm.metadata.FieldInfo;
 import org.neo4j.ogm.metadata.MetaData;
+import org.neo4j.ogm.response.model.Neo4jNodeId;
+import org.neo4j.ogm.response.model.NodeId;
 import org.neo4j.ogm.utils.EntityUtils;
 
 /**
@@ -33,7 +35,7 @@ import org.neo4j.ogm.utils.EntityUtils;
 public class MappingContext {
 
     // map Neo4j id -> entity
-    private final Map<Long, Object> nodeEntityRegister;
+    private final Map<NodeId, Object> nodeEntityRegister;
 
     // map primary index value -> entity
     private final Map<Object, Object> primaryIndexNodeRegister;
@@ -61,11 +63,11 @@ public class MappingContext {
      * @param id The id to look for. Can be either the native db long id (@GraphId) or a user defined id (@Id)
      * @return The entity or null if not found.
      */
-    public Object getNodeEntity(Object id) {
+    public Object getNodeEntity(NodeId id) {
 
         Object result = null;
 
-        if (id instanceof Long) {
+        if (id instanceof Neo4jNodeId) {
             result = nodeEntityRegister.get(id);
         }
 
@@ -76,15 +78,20 @@ public class MappingContext {
         return result;
     }
 
-    /**
-     * Adds an entity to the MappingContext.
-     * @param entity The object to add.
-     * @return The object added, never null.
-     */
+    @Deprecated
+    public Object getNodeEntity(Long id) {
+        return getNodeEntity(Neo4jNodeId.of(id));
+    }
+
+        /**
+		 * Adds an entity to the MappingContext.
+		 * @param entity The object to add.
+		 * @return The object added, never null.
+		 */
     public Object addNodeEntity(Object entity) {
 
         ClassInfo classInfo = metaData.classInfo(entity);
-        Long id = EntityUtils.getEntityId(metaData, entity);
+        NodeId id = EntityUtils.nodeId(entity, metaData);
 
         if (nodeEntityRegister.putIfAbsent(id, entity) == null) {
             remember(entity);
@@ -112,7 +119,7 @@ public class MappingContext {
      */
     void removeNodeEntity(Object entity, boolean deregisterDependentRelationshipEntity) {
 
-        Long id = EntityUtils.getEntityId(metaData, entity);
+        NodeId id = EntityUtils.nodeId(entity, metaData);
 
         nodeEntityRegister.remove(id);
         final ClassInfo primaryIndexClassInfo = metaData.classInfo(entity);
@@ -123,8 +130,8 @@ public class MappingContext {
         }
 
         if (deregisterDependentRelationshipEntity) {
-        deregisterDependentRelationshipEntity(entity);
-    }
+        	deregisterDependentRelationshipEntity(entity);
+    	}
     }
 
     public void replaceNodeEntity(Object entity) {
@@ -244,7 +251,7 @@ public class MappingContext {
     /*
      * purges all information about a node entity with this id
      */
-    public boolean detachNodeEntity(Object id) {
+    public boolean detachNodeEntity(NodeId id) {
         Object objectToDetach = getNodeEntity(id);
         if (objectToDetach != null) {
             removeEntity(objectToDetach);
@@ -301,7 +308,7 @@ public class MappingContext {
         Class<?> type = entity.getClass();
         ClassInfo classInfo = metaData.classInfo(type.getName());
 
-        Long id = EntityUtils.getEntityId(metaData, entity);
+        NodeId id = EntityUtils.nodeId(entity, metaData);
 
         if (id != null) {
             if (!metaData.isRelationshipEntity(type.getName())) {
@@ -309,15 +316,15 @@ public class MappingContext {
                     // todo: this will be very slow for many objects
                     // todo: refactor to create a list of mappedRelationships from a nodeEntity id.
                     for (MappedRelationship mappedRelationship : relationshipRegister) {
-                        if (mappedRelationship.getStartNodeId() == id || mappedRelationship.getEndNodeId() == id) {
-                            Object affectedObject = mappedRelationship.getEndNodeId() == id ? getNodeEntity(mappedRelationship.getStartNodeId()) : getNodeEntity(mappedRelationship.getEndNodeId());
+                        if (id.equals(mappedRelationship.getStartNodeId()) || id.equals(mappedRelationship.getEndNodeId())) {
+                            Object affectedObject = id.equals(mappedRelationship.getEndNodeId()) ? getNodeEntity(mappedRelationship.getStartNodeId()) : getNodeEntity(mappedRelationship.getEndNodeId());
                             if (affectedObject != null) {
                                 neighbours.add(affectedObject);
                             }
                         }
                     }
                 }
-            } else if (relationshipEntityRegister.containsKey(id)) {
+            } else if (relationshipEntityRegister.containsKey(id.getValue())) {
                 FieldInfo startNodeReader = classInfo.getStartNodeReader();
                 FieldInfo endNodeReader = classInfo.getEndNodeReader();
                 neighbours.add(startNodeReader.read(entity));
@@ -348,7 +355,7 @@ public class MappingContext {
     }
 
     private void purge(Object entity, Class type) {
-        Long id = EntityUtils.getEntityId(metaData, entity);
+        NodeId id = EntityUtils.nodeId(entity, metaData);
         Set<Object> relEntitiesToPurge = new HashSet<>();
         if (id != null) {
             // remove a NodeEntity
@@ -360,7 +367,7 @@ public class MappingContext {
                     Iterator<MappedRelationship> mappedRelationshipIterator = relationshipRegister.iterator();
                     while (mappedRelationshipIterator.hasNext()) {
                         MappedRelationship mappedRelationship = mappedRelationshipIterator.next();
-                        if (mappedRelationship.getStartNodeId() == id || mappedRelationship.getEndNodeId() == id) {
+                        if (id.equals(mappedRelationship.getStartNodeId()) || id.equals(mappedRelationship.getEndNodeId())) {
 
                             // first purge any RE mappings (if its a RE)
                             if (mappedRelationship.getRelationshipId() != null) {

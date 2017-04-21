@@ -16,6 +16,7 @@ package org.neo4j.ogm.session.delegates;
 
 import org.neo4j.ogm.exception.MappingException;
 import org.neo4j.ogm.metadata.ClassInfo;
+import org.neo4j.ogm.response.model.Neo4jNodeId;
 import org.neo4j.ogm.session.Neo4jSession;
 import org.neo4j.ogm.utils.EntityUtils;
 
@@ -49,7 +50,7 @@ public class GraphIdDelegate {
     }
 
     public boolean detachNodeEntity(Long id) {
-        return session.context().detachNodeEntity(id);
+        return session.context().detachNodeEntity(Neo4jNodeId.of(id));
     }
 
     public boolean detachRelationshipEntity(Long id) {

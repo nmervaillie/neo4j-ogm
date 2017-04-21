@@ -23,6 +23,7 @@ import org.neo4j.ogm.model.RowModel;
 import org.neo4j.ogm.request.RowModelRequest;
 import org.neo4j.ogm.request.Statement;
 import org.neo4j.ogm.response.Response;
+import org.neo4j.ogm.response.model.Neo4jNodeId;
 import org.neo4j.ogm.session.Neo4jSession;
 import org.neo4j.ogm.session.event.Event;
 import org.neo4j.ogm.session.event.PersistenceEvent;
@@ -238,7 +239,7 @@ public class DeleteDelegate {
                 session.detachRelationshipEntity(identity);
             }
         } else {
-            object = session.context().getNodeEntity(identity);
+            object = session.context().getNodeEntity(Neo4jNodeId.of(identity));
             if (object != null) {
                 session.detachNodeEntity(identity);
             }

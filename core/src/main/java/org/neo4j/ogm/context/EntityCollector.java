@@ -8,7 +8,7 @@
  * This product may include a number of subcomponents with
  * separate copyright notices and license terms. Your use of the source
  * code for these subcomponents is subject to the terms and
- *  conditions of the subcomponent's license, as noted in the LICENSE file.
+ * conditions of the subcomponent's license, as noted in the LICENSE file.
  */
 
 package org.neo4j.ogm.context;
@@ -59,7 +59,7 @@ class EntityCollector {
      * @param owningObjectId the owning object id
      * @return all relationship types owned by the owning object
      */
-    public Iterable<String> getOwningRelationshipTypes(Long owningObjectId) {
+    public Iterable<String> getOwningRelationshipTypes(Object owningObjectId) {
         Set<String> relTypes = new HashSet<>();
         for (DirectedRelationship rel : this.relationshipCollectibles.get(owningObjectId).keySet()) {
             relTypes.add(rel.type());
@@ -67,7 +67,7 @@ class EntityCollector {
         return relTypes;
     }
 
-    public Iterable<String> getRelationshipDirectionsForOwningTypeAndRelationshipType(Long owningObjectId, String relationshipType) {
+    public Iterable<String> getRelationshipDirectionsForOwningTypeAndRelationshipType(Object owningObjectId, String relationshipType) {
         Set<String> relDirections = new HashSet<>();
         for (DirectedRelationship rel : this.relationshipCollectibles.get(owningObjectId).keySet()) {
             if (rel.type().equals(relationshipType)) {
@@ -77,7 +77,7 @@ class EntityCollector {
         return relDirections;
     }
 
-    public Iterable<Class> getEntityClassesForOwningTypeAndRelationshipTypeAndRelationshipDirection(Long owningObjectId, String relationshipType, String relationshipDirection) {
+    public Iterable<Class> getEntityClassesForOwningTypeAndRelationshipTypeAndRelationshipDirection(Object owningObjectId, String relationshipType, String relationshipDirection) {
         Set<Class> classes = new HashSet<>();
         for (DirectedRelationship rel : this.relationshipCollectibles.get(owningObjectId).keySet()) {
             if (rel.type().equals(relationshipType) && rel.direction().equals(relationshipDirection)) {
@@ -96,7 +96,7 @@ class EntityCollector {
      * @param entityClass the entity class
      * @return set of instances to be set for the relationship type on the owning object
      */
-    public Set<Object> getCollectiblesForOwnerAndRelationship(Long owningObjectId, String relationshipType, String relationshipDirection, Class entityClass) {
+    public Set<Object> getCollectiblesForOwnerAndRelationship(Object owningObjectId, String relationshipType, String relationshipDirection, Class entityClass) {
         DirectedRelationship directedRelationship = new DirectedRelationship(relationshipType, relationshipDirection);
         return this.relationshipCollectibles.get(owningObjectId).get(directedRelationship).get(entityClass);
     }

@@ -8,7 +8,7 @@
  * This product may include a number of subcomponents with
  * separate copyright notices and license terms. Your use of the source
  * code for these subcomponents is subject to the terms and
- *  conditions of the subcomponent's license, as noted in the LICENSE file.
+ * conditions of the subcomponent's license, as noted in the LICENSE file.
  */
 
 package org.neo4j.ogm.context;
@@ -24,6 +24,7 @@ import org.neo4j.ogm.metadata.MetaData;
 import org.neo4j.ogm.model.GraphRowListModel;
 import org.neo4j.ogm.model.GraphRowModel;
 import org.neo4j.ogm.response.Response;
+import org.neo4j.ogm.response.model.Neo4jNodeId;
 
 /**
  * @author vince
@@ -66,7 +67,7 @@ public class GraphRowListModelMapper implements ResponseMapper<GraphRowListModel
 
         if (classInfo.annotationsInfo().get(RelationshipEntity.class) == null) {
             for (Long resultEntityId : resultEntityIds) {
-                result.add((T) mappingContext.getNodeEntity(resultEntityId));
+                result.add((T) mappingContext.getNodeEntity(Neo4jNodeId.of(resultEntityId)));
             }
         } else {
             for (Long resultEntityId : resultEntityIds) {

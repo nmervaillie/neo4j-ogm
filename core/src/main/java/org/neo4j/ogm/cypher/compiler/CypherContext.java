@@ -16,6 +16,7 @@ package org.neo4j.ogm.cypher.compiler;
 import java.util.*;
 
 import org.neo4j.ogm.context.Mappable;
+import org.neo4j.ogm.response.model.NodeId;
 
 /**
  * Maintains contextual information throughout the process of compiling Cypher statements to persist a graph of objects.
@@ -26,10 +27,10 @@ import org.neo4j.ogm.context.Mappable;
  */
 public class CypherContext implements CompileContext {
 
-    private final Map<Long, NodeBuilder> visitedObjects = new HashMap<>();
+    private final Map<Object, NodeBuilder> visitedObjects = new HashMap<>();
     private final Set<Long> visitedRelationshipEntities = new HashSet<>();
 
-    private final Map<Long, Object> createdObjectsWithId = new HashMap<>();
+    private final Map<NodeId, Object> createdObjectsWithId = new HashMap<>();
     private final Collection<Mappable> registeredRelationships = new HashSet<>();
     private final Collection<Mappable> deletedRelationships = new HashSet<>();
     private final Map<Long, Long> newNodeIds = new HashMap<>();
@@ -42,12 +43,12 @@ public class CypherContext implements CompileContext {
         this.compiler = compiler;
     }
 
-    public boolean visited(Long obj) {
+    public boolean visited(Object obj) {
         return this.visitedObjects.containsKey(obj);
     }
 
     @Override
-    public void visit(Long identity, NodeBuilder nodeBuilder) {
+    public void visit(Object identity, NodeBuilder nodeBuilder) {
         this.visitedObjects.put(identity, nodeBuilder);
     }
 
@@ -60,18 +61,18 @@ public class CypherContext implements CompileContext {
     }
 
     @Override
-    public NodeBuilder visitedNode(Long identity) {
+    public NodeBuilder visitedNode(Object identity) {
         return this.visitedObjects.get(identity);
     }
 
     @Override
-    public void registerNewObject(Long reference, Object entity) {
+    public void registerNewObject(NodeId reference, Object entity) {
         createdObjectsWithId.put(reference, entity);
         register(entity);
     }
 
     @Override
-    public Object getNewObject(Long id) {
+    public Object getNewObject(NodeId id) {
         return createdObjectsWithId.get(id);
     }
 
@@ -101,13 +102,13 @@ public class CypherContext implements CompileContext {
      * @param endNodeType the class type of the entity at the end of the relationship
      * @return true if the relationship was deleted or doesn't exist in the graph, false otherwise
      */
-    public boolean deregisterOutgoingRelationships(Long src, String relationshipType, Class endNodeType) {
+    public boolean deregisterOutgoingRelationships(NodeId src, String relationshipType, Class endNodeType) {
         Iterator<Mappable> iterator = registeredRelationships.iterator();
         List<Mappable> cleared = new ArrayList<>();
         boolean nothingToDelete = true;
         while (iterator.hasNext()) {
             Mappable mappedRelationship = iterator.next();
-            if (mappedRelationship.getStartNodeId() == src && mappedRelationship.getRelationshipType().equals(relationshipType) && endNodeType.equals(mappedRelationship.getEndNodeType())) {
+            if (mappedRelationship.getStartNodeId().equals(src) && mappedRelationship.getRelationshipType().equals(relationshipType) && endNodeType.equals(mappedRelationship.getEndNodeType())) {
                 cleared.add(mappedRelationship);
                 iterator.remove();
                 nothingToDelete = false;
@@ -147,13 +148,14 @@ public class CypherContext implements CompileContext {
      * @param endNodeType the class type of the entity at the other end of the relationship
      * @return true if the relationship was deleted or doesn't exist in the graph, false otherwise
      */
-    public boolean deregisterIncomingRelationships(Long tgt, String relationshipType, Class endNodeType, boolean relationshipEntity) {
+    @Override
+    public boolean deregisterIncomingRelationships(NodeId tgt, String relationshipType, Class endNodeType, boolean relationshipEntity) {
         Iterator<Mappable> iterator = registeredRelationships.iterator();
         List<Mappable> cleared = new ArrayList<>();
         boolean nothingToDelete = true;
         while (iterator.hasNext()) {
             Mappable mappedRelationship = iterator.next();
-            if (mappedRelationship.getEndNodeId() == tgt && mappedRelationship.getRelationshipType().equals(relationshipType) && endNodeType.equals(relationshipEntity ? mappedRelationship.getEndNodeType() : mappedRelationship.getStartNodeType())) {
+            if (mappedRelationship.getEndNodeId().equals(tgt) && mappedRelationship.getRelationshipType().equals(relationshipType) && endNodeType.equals(relationshipEntity ? mappedRelationship.getEndNodeType() : mappedRelationship.getStartNodeType())) {
                 cleared.add(mappedRelationship);
                 iterator.remove();
                 nothingToDelete = false;
@@ -190,6 +192,7 @@ public class CypherContext implements CompileContext {
         return compiler;
     }
 
+    @Override
     public Long getId(Long reference) {
         if (newNodeIds.containsKey(reference)) {
             return newNodeIds.get(reference);
@@ -197,7 +200,7 @@ public class CypherContext implements CompileContext {
         return reference;
     }
 
-    @Override
+	@Override
     public void registerNewId(Long reference, Long id) {
         newNodeIds.put(reference, id);
     }

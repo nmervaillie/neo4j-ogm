@@ -294,6 +294,9 @@ public class ClassInfo {
      * @throws MappingException if no identity field can be found
      */
     public FieldInfo identityField() {
+        if (primaryIndexField() != null) {
+            return primaryIndexField();
+        }
         if (identityField != null) {
             return identityField;
         }
